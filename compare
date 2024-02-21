@@ -1,75 +1,82 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
 import csv
 
-class CSVComparerApp:
-    def __init__(self, master):
-        self.master = master
-        self.master.title("CSV Comparer")
-        
-        self.file_paths = {}
-        self.column_to_compare = ""
-        
-        self.select_button = tk.Button(master, text="Select CSV Files", command=self.select_files)
-        self.select_button.pack(pady=10)
-        
-        self.column_label = tk.Label(master, text="Enter column name to compare:")
-        self.column_label.pack()
-        self.column_entry = tk.Entry(master)
-        self.column_entry.pack(pady=5)
-        
-        self.compare_button = tk.Button(master, text="Compare Files", command=self.compare_files)
-        self.compare_button.pack(pady=5)
-        
-    def select_files(self):
-        self.file_paths = {}
-        file_paths = filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
-        if len(file_paths) > 0:
-            messagebox.showinfo("Files Selected", "CSV files selected successfully.")
-            for file_path in file_paths:
-                file_name = file_path.split('/')[-1]
-                self.file_paths[file_name] = file_path
-        else:
-            messagebox.showwarning("No File Selected", "Please select at least one CSV file.")
-            
-    def compare_files(self):
-        if len(self.file_paths) < 2:
-            messagebox.showwarning("Insufficient Files", "Please select at least two CSV files to compare.")
+def load_csv(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            reader = csv.reader(file)
+            data = list(reader)
+        return data
+    except Exception as e:
+        return None
+
+def compare_csv():
+    file1_path = file1_entry.get()
+    file2_path = file2_entry.get()
+
+    csv1_data = load_csv(file1_path)
+    csv2_data = load_csv(file2_path)
+
+    if csv1_data is None or csv2_data is None:
+        result_text.set("Error: Unable to load CSV files.")
+        return
+
+    for row in csv1_data:
+        if row not in csv2_data:
+            result_text.set("Difference Detected. Please investigate")
             return
 
-        try:
-            self.column_to_compare = self.column_entry.get().strip()
-            if not self.column_to_compare:
-                messagebox.showwarning("Invalid Input", "Please enter a column name to compare.")
-                return
+    for row in csv2_data:
+        if row not in csv1_data:
+            result_text.set("Difference Detected. Please investigate")
+            return
 
-            # Read specified column from each file
-            key_data = {}
-            for file_name, file_path in self.file_paths.items():
-                with open(file_path, 'r') as file:
-                    csv_reader = csv.DictReader(file)
-                    key_data[file_name] = {row[self.column_to_compare] for row in csv_reader}
-            
-            # Compare key data
-            differences_found = False
-            for file_name1, key_set1 in key_data.items():
-                for file_name2, key_set2 in key_data.items():
-                    if file_name1 != file_name2:
-                        diff = key_set1.symmetric_difference(key_set2)
-                        if diff:
-                            differences_found = True
-                            messagebox.showinfo("Differences Found", f"Differences found between {file_name1} and {file_name2} in column '{self.column_to_compare}':\n\n{diff}")
-                    
-            if not differences_found:
-                messagebox.showinfo("No Differences", f"No differences found between the CSV files in column '{self.column_to_compare}'.")
-        except Exception as e:
-            messagebox.showerror("Error", f"Error comparing files:\n{str(e)}")
-    
+    result_text.set("No Differences")
 
-def main():
-    root = tk.Tk()
-    app = CSVComparerApp(root)
-    root.mainloop()
+# Create main window
+root = tk.Tk()
+root.title("CSV Comparator")
 
-if __name__ == "__main__":
-    main()
+# Function to open file dialog and select CSV file
+def select_file(entry_widget):
+    file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+    entry_widget.delete(0, tk.END)
+    entry_widget.insert(0, file_path)
+
+# Frame for file 1 selection
+file1_frame = tk.Frame(root)
+file1_frame.pack(pady=10)
+
+file1_label = tk.Label(file1_frame, text="CSV File 1:")
+file1_label.pack(side=tk.LEFT)
+
+file1_entry = tk.Entry(file1_frame, width=50)
+file1_entry.pack(side=tk.LEFT, padx=10)
+
+file1_button = tk.Button(file1_frame, text="Browse", command=lambda: select_file(file1_entry))
+file1_button.pack(side=tk.LEFT)
+
+# Frame for file 2 selection
+file2_frame = tk.Frame(root)
+file2_frame.pack(pady=10)
+
+file2_label = tk.Label(file2_frame, text="CSV File 2:")
+file2_label.pack(side=tk.LEFT)
+
+file2_entry = tk.Entry(file2_frame, width=50)
+file2_entry.pack(side=tk.LEFT, padx=10)
+
+file2_button = tk.Button(file2_frame, text="Browse", command=lambda: select_file(file2_entry))
+file2_button.pack(side=tk.LEFT)
+
+# Button to compare CSV files
+compare_button = tk.Button(root, text="Compare CSV Files", command=compare_csv)
+compare_button.pack(pady=10)
+
+# Result text
+result_text = tk.StringVar()
+result_label = tk.Label(root, textvariable=result_text)
+result_label.pack()
+
+root.mainloop()
