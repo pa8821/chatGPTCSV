@@ -1,0 +1,74 @@
+import tkinter as tk
+from tkinter import filedialog, messagebox
+import csv
+
+class CSVComparerApp:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("CSV Comparer")
+        
+        self.file_paths = []
+        self.column_to_compare = ""
+        
+        self.select_button = tk.Button(master, text="Select CSV Files", command=self.select_files)
+        self.select_button.pack(pady=10)
+        
+        self.column_label = tk.Label(master, text="Enter column name to compare:")
+        self.column_label.pack()
+        self.column_entry = tk.Entry(master)
+        self.column_entry.pack(pady=5)
+        
+        self.compare_button = tk.Button(master, text="Compare Files", command=self.compare_files)
+        self.compare_button.pack(pady=5)
+        
+    def select_files(self):
+        self.file_paths = filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
+        if len(self.file_paths) > 0:
+            messagebox.showinfo("Files Selected", "CSV files selected successfully.")
+        else:
+            messagebox.showwarning("No File Selected", "Please select at least one CSV file.")
+            
+    def compare_files(self):
+        if len(self.file_paths) < 2:
+            messagebox.showwarning("Insufficient Files", "Please select at least two CSV files to compare.")
+            return
+
+        try:
+            self.column_to_compare = self.column_entry.get().strip()
+            if not self.column_to_compare:
+                messagebox.showwarning("Invalid Input", "Please enter a column name to compare.")
+                return
+
+            # Read specified column from each file
+            column_data = []
+            for file_path in self.file_paths:
+                with open(file_path, 'r') as file:
+                    csv_reader = csv.DictReader(file)
+                    column = [row[self.column_to_compare] for row in csv_reader]
+                    column_data.append(column)
+            
+            # Compare column data
+            differences_found = False
+            for i in range(1, len(column_data)):
+                diff = self.compare_columns(column_data[i], column_data[i-1])
+                if diff:
+                    differences_found = True
+                    messagebox.showinfo("Differences Found", f"Differences found between File {i+1} and File {i} in column '{self.column_to_compare}':\n\n{diff}")
+                    
+            if not differences_found:
+                messagebox.showinfo("No Differences", f"No differences found between the CSV files in column '{self.column_to_compare}'.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error comparing files:\n{str(e)}")
+    
+    def compare_columns(self, column1, column2):
+        # Compare values
+        diff_values = [(i+1, val1, val2) for i, (val1, val2) in enumerate(zip(column1, column2)) if val1 != val2]
+        return '\n'.join([f"Row {row}: '{val1}' != '{val2}'" for row, val1, val2 in diff_values])
+
+def main():
+    root = tk.Tk()
+    app = CSVComparerApp(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
