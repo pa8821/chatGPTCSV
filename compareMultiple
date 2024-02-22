@@ -1,0 +1,82 @@
+import tkinter as tk
+from tkinter import filedialog
+import csv
+
+def load_csv(file_paths):
+    data_list = []
+    for file_path in file_paths.split('\n'):
+        try:
+            with open(file_path.strip(), 'r') as file:
+                reader = csv.reader(file)
+                data = list(reader)
+            data_list.append(data)
+        except Exception as e:
+            pass  # Skip invalid files
+    return data_list
+
+def compare_csv():
+    file1_paths = file1_text.get("1.0", tk.END).strip()
+    file2_paths = file2_text.get("1.0", tk.END).strip()
+
+    csv1_data_list = load_csv(file1_paths)
+    csv2_data_list = load_csv(file2_paths)
+
+    results = []
+    for csv1_data, csv2_data in zip(csv1_data_list, csv2_data_list):
+        if len(csv1_data) == 0 or len(csv2_data) == 0:
+            results.append("Error: Unable to load CSV files.")
+            continue
+
+        if csv1_data == csv2_data:
+            results.append("CSV files are identical.")
+        else:
+            results.append("CSV files have differences.")
+
+    result_text.set("\n".join(results))
+
+# Create main window
+root = tk.Tk()
+root.title("CSV Comparator")
+
+# Function to open file dialog and select CSV files
+def select_files(text_widget):
+    file_paths = filedialog.askopenfilenames(filetypes=[("CSV files", "*.csv")])
+    text_widget.delete("1.0", tk.END)
+    text_widget.insert(tk.END, "\n".join(file_paths))
+
+# Frame for file 1 selection
+file1_frame = tk.Frame(root)
+file1_frame.pack(pady=10)
+
+file1_label = tk.Label(file1_frame, text="CSV Files 1:")
+file1_label.pack(side=tk.LEFT)
+
+file1_text = tk.Text(file1_frame, width=50, height=4)
+file1_text.pack(side=tk.LEFT, padx=10)
+
+file1_button = tk.Button(file1_frame, text="Browse", command=lambda: select_files(file1_text))
+file1_button.pack(side=tk.LEFT)
+
+# Frame for file 2 selection
+file2_frame = tk.Frame(root)
+file2_frame.pack(pady=10)
+
+file2_label = tk.Label(file2_frame, text="CSV Files 2:")
+file2_label.pack(side=tk.LEFT)
+
+file2_text = tk.Text(file2_frame, width=50, height=4)
+file2_text.pack(side=tk.LEFT, padx=10)
+
+file2_button = tk.Button(file2_frame, text="Browse", command=lambda: select_files(file2_text))
+file2_button.pack(side=tk.LEFT)
+
+# Button to compare CSV files
+compare_button = tk.Button(root, text="Compare CSV Files", command=compare_csv)
+compare_button.pack(pady=10)
+
+# Result text
+result_text = tk.StringVar()
+result_label = tk.Label(root, textvariable=result_text)
+result_label.pack()
+
+root.mainloop()
