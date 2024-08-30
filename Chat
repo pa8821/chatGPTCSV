@@ -1,0 +1,60 @@
+# Sample DataFrame
+data = {
+    "Type": ["Initiative", "Epic", "Epic", "Initiative", "Epic", "Epic"],
+    "Name": ["Initiative1", "Epic1", "Epic2", "Initiative2", "Epic3", "Epic4"],
+    "Parent": [None, "Initiative1", "Initiative1", None, "Initiative2", "Initiative2"]
+}
+df = pd.DataFrame(data)
+
+# Initialize lists to build the hierarchical table
+table_data = {
+    "Name": [],
+    "Type": [],
+    "Indentation": []
+}
+
+# Iterate over the DataFrame to build the hierarchy
+for i, row in df.iterrows():
+    if row['Type'] == 'Initiative':
+        table_data['Name'].append(row['Name'])
+        table_data['Type'].append(row['Type'])
+        table_data['Indentation'].append(0)
+        
+        # Add epics under the initiative
+        epics = df[df['Parent'] == row['Name']]
+        for _, epic_row in epics.iterrows():
+            table_data['Name'].append(epic_row['Name'])
+            table_data['Type'].append(epic_row['Type'])
+            table_data['Indentation'].append(1)
+
+# Convert to DataFrame
+hierarchical_df = pd.DataFrame(table_data)
+
+# Create a Plotly table with collapsible rows
+fig = go.Figure(data=[go.Table(
+    header=dict(values=['Name', 'Type'],
+                fill_color='paleturquoise',
+                align='left'),
+    cells=dict(values=[hierarchical_df.Name, hierarchical_df.Type],
+               fill_color='lavender',
+               align='left'))
+])
+
+# Add buttons for collapse/expand functionality
+fig.update_layout(
+    updatemenus=[
+        dict(type="buttons",
+             buttons=[
+                 dict(label="Expand All",
+                      method="update",
+                      args=[{"cells": {"values": [hierarchical_df.Name, hierarchical_df.Type]},
+                             "header": dict(fill_color='paleturquoise'),
+                             "cells": dict(fill_color='lavender')}]),
+                 dict(label="Collapse All",
+                      method="update",
+                      args=[{"cells": {"values": [hierarchical_df.Name[hierarchical_df.Indentation == 0], hierarchical_df.Type[hierarchical_df.Indentation == 0]]},
+                             "header": dict(fill_color='paleturquoise'),
+                             "cells": dict(fill_color='lavender')}]),
+             ])
+    ]
+)
