@@ -80,3 +80,103 @@ result_label = tk.Label(root, textvariable=result_text)
 result_label.pack()
 
 root.mainloop()
+
+
+import tkinter as tk
+from tkinter import messagebox
+
+
+class ConfigBuilder(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Config Builder")
+        self.geometry("600x500")
+
+        self.profile_entries = {}
+        self.benefits_entries = []
+
+        self.build_profile_section()
+        self.build_benefits_section()
+        self.build_buttons()
+
+    def build_profile_section(self):
+        profile_frame = tk.LabelFrame(self, text="Profile", padx=10, pady=10)
+        profile_frame.pack(fill="x", padx=10, pady=5)
+
+        fields = ["name", "detail", "department"]
+        for i, field in enumerate(fields):
+            label = tk.Label(profile_frame, text=field)
+            label.grid(row=i, column=0, sticky="w")
+            entry = tk.Entry(profile_frame, width=40)
+            entry.grid(row=i, column=1)
+            self.profile_entries[field] = entry
+
+    def build_benefits_section(self):
+        self.benefits_frame = tk.LabelFrame(self, text="Benefits", padx=10, pady=10)
+        self.benefits_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+        self.add_benefit_row()  # Add the first benefit row
+
+        add_btn = tk.Button(self.benefits_frame, text="+ Add Benefit", command=self.add_benefit_row)
+        add_btn.pack(pady=5)
+
+    def add_benefit_row(self):
+        row_frame = tk.Frame(self.benefits_frame)
+        row_frame.pack(fill="x", pady=2)
+
+        type_entry = tk.Entry(row_frame, width=20)
+        type_entry.pack(side="left", padx=5)
+        type_entry.insert(0, "type")
+
+        type2_entry = tk.Entry(row_frame, width=20)
+        type2_entry.pack(side="left", padx=5)
+        type2_entry.insert(0, "type2")
+
+        remove_btn = tk.Button(row_frame, text="Remove", command=lambda: self.remove_benefit_row(row_frame))
+        remove_btn.pack(side="left", padx=5)
+
+        self.benefits_entries.append((type_entry, type2_entry))
+
+    def remove_benefit_row(self, row_frame):
+        for widgets in row_frame.winfo_children():
+            widgets.destroy()
+        row_frame.destroy()
+        self.benefits_entries = [pair for pair in self.benefits_entries if pair[0].winfo_exists()]
+
+    def build_buttons(self):
+        button_frame = tk.Frame(self)
+        button_frame.pack(pady=10)
+
+        save_btn = tk.Button(button_frame, text="Build Config", command=self.build_config)
+        save_btn.pack()
+
+    def build_config(self):
+        # Build profile dict
+        profile = {}
+        for key, entry in self.profile_entries.items():
+            value = entry.get().strip()
+            if value:
+                profile[key] = value
+
+        # Build benefits list
+        benefits = []
+        for type_entry, type2_entry in self.benefits_entries:
+            type_val = type_entry.get().strip()
+            type2_val = type2_entry.get().strip()
+            if type_val or type2_val:
+                benefits.append({"type": type_val, "type2": type2_val})
+
+        cfg = {
+            "profile": profile,
+            "benefits": benefits
+        }
+
+        # You can save cfg or display it
+        messagebox.showinfo("Config Built", f"Configuration:\n{cfg}")
+        print(cfg)  # Or save/export if needed
+
+
+if __name__ == "__main__":
+    app = ConfigBuilder()
+    app.mainloop()
+
